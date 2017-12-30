@@ -159,6 +159,9 @@ final class RuleSet implements RuleSetInterface
             'unary_operator_spaces' => true,
             'whitespace_after_comma_in_array' => true,
             'yoda_style' => true,
+            'split_long_multiline_array' => false,
+            'split_long_call' => false,
+            'long_lines' => true,
         ],
         '@Symfony:risky' => [
             'dir_constant' => true,
