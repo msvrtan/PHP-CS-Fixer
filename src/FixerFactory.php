@@ -162,6 +162,7 @@ final class FixerFactory
         $fixerConflicts = [];
 
         $fixerNames = array_keys($ruleSet->getRules());
+
         foreach ($fixerNames as $name) {
             if (!array_key_exists($name, $this->fixersByName)) {
                 throw new \UnexpectedValueException(sprintf('Rule "%s" does not exist.', $name));

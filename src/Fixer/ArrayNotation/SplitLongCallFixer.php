@@ -1,19 +1,9 @@
 <?php
 
 declare(strict_types=1);
-/*
- * This file is part of PHP CS Fixer.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *     Dariusz Rumiński <dariusz.ruminski@gmail.com>
- *
- * This source file is subject to the MIT license that is bundled
- * with this source code in the file LICENSE.
- */
 
 namespace PhpCsFixer\Fixer\ArrayNotation;
 
-use PHP_CodeSniffer\Tokenizers\PHP;
 use PhpCsFixer\AbstractFixer;
 use PhpCsFixer\Fixer\WhitespacesAwareFixerInterface;
 use PhpCsFixer\FixerDefinition\CodeSample;
@@ -28,7 +18,7 @@ use SplFileInfo;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-final class SplitLongCallsFixer extends AbstractFixer implements WhitespacesAwareFixerInterface
+final class SplitLongCallFixer extends AbstractFixer implements WhitespacesAwareFixerInterface
 {
     /**
      * @TODO:
@@ -65,15 +55,16 @@ final class SplitLongCallsFixer extends AbstractFixer implements WhitespacesAwar
     /**
      * {@inheritdoc}
      */
-    protected function applyFix(\SplFileInfo $file, Tokens $tokens)
+    protected function applyFix(SplFileInfo $file, Tokens $tokens)
     {
         $this->indent = $this->whitespacesConfig->getIndent();
 
         $tokensAnalyzer = new TokensAnalyzer($tokens);
 
-        for ($index = 0; $index <= $tokens->count() - 1; $index++) {
-            if ($tokensAnalyzer->isArray($index) /*&& $tokensAnalyzer->isArrayMultiLine($index)*/) {
-                $this->fixArray($tokens, $index);
+        for ($index = 0; $index <= $tokens->count() - 1; ++$index) {
+            if ($tokens[$index]->equals('(')) {
+                $this->fixCall($tokens, $index);
+                $this->fixCall($tokens, $index);
             }
         }
     }
@@ -82,19 +73,13 @@ final class SplitLongCallsFixer extends AbstractFixer implements WhitespacesAwar
      * @param Tokens $tokens
      * @param int    $index
      */
-    private function fixArray(Tokens $tokens, $index)
+    private function fixCall(Tokens $tokens, $index)
     {
-
         $startIndex = $index;
 
-        if ($tokens[$startIndex]->isGivenKind(T_ARRAY)) {
-            $startIndex = $tokens->getNextTokenOfKind($startIndex, ['(']);
-            $endIndex = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $startIndex);
-        } else {
-            $endIndex = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_ARRAY_SQUARE_BRACE, $startIndex);
-        }
+        $endIndex = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $startIndex);
 
-        // Initial length of the array.
+        // Initial length of the call.
         $initialLength = 0;
 
         for ($i = $startIndex; $i <= $endIndex; ++$i) {
@@ -113,9 +98,8 @@ final class SplitLongCallsFixer extends AbstractFixer implements WhitespacesAwar
         for ($i = $startIndex; $i > 0; --$i) {
             // Look for previous whitespace
             if ($tokens[$i]->isWhitespace()) {
-                // Find last occurance of new line in whitespace (whitespace can be multiline!)
                 $newLineCharacterPosition = strrpos($tokens[$i]->getContent(), PHP_EOL);
-                // If whitespace has new line, 
+                // If whitespace has new line,
                 if (false !== $newLineCharacterPosition) {
                     // Define base indentation as string from new line character all the way to the end
                     $baseIndentation = substr($tokens[$i]->getContent(), $newLineCharacterPosition + 1);
@@ -127,18 +111,18 @@ final class SplitLongCallsFixer extends AbstractFixer implements WhitespacesAwar
         $newLine = PHP_EOL.$baseIndentation.$this->indent;
 
         //
-        // Add new line to start of the array
+        // Add new line to start of the call
         //
         if (true === $tokens[$startIndex + 1]->isWhitespace()) {
             $tokens[$startIndex + 1] = new Token([T_WHITESPACE, $newLine]);
         } else {
             $tokens->insertAt($startIndex + 1, new Token([T_WHITESPACE, $newLine]));
-            $endIndex++;
+            ++$endIndex;
         }
 
         //
-        // Add new line to end of the array
-        // Indentation should be of same width as it is on the line where array was started.
+        // Add new line to end of the call
+        // Indentation should be of same width as it is on the line where call was started.
         //
         if (true === $tokens[$endIndex - 1]->isWhitespace()) {
             $tokens[$endIndex - 1] = new Token([T_WHITESPACE, PHP_EOL.$baseIndentation]);
@@ -147,27 +131,16 @@ final class SplitLongCallsFixer extends AbstractFixer implements WhitespacesAwar
             ++$endIndex;
         }
 
-        $beforeEndIndex = $tokens->getPrevMeaningfulToken($endIndex);
-
-        if ($tokens[$beforeEndIndex]->equals(',')) {
-            $beforeEndIndex = $tokens->getPrevMeaningfulToken($beforeEndIndex);
-        }
-
-        if ($startIndex === $beforeEndIndex) {
-            return;
-        }
-
-        for ($i = $startIndex + 1; $i <= $beforeEndIndex; ++$i) {
-
+        for ($i = $startIndex + 1; $i <= $endIndex; ++$i) {
             // Skip class instantiations and sub arrays
             if (true === $tokens[$i]->isGivenKind(T_NEW)) {
                 $openingClassBrace = $tokens->getNextTokenOfKind($i, ['(']);
-                $i = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $openingClassBrace);
+                $i                 = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $openingClassBrace);
             } elseif ($tokens[$i]->equals('(')) {
                 $i = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $i);
             } elseif ($tokens[$i]->isGivenKind(T_ARRAY)) {
                 $openingArrayBrace = $tokens->getNextTokenOfKind($i, ['(']);
-                $i = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $openingArrayBrace);
+                $i                 = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $openingArrayBrace);
             } elseif ($tokens[$i]->isGivenKind(CT::T_ARRAY_SQUARE_BRACE_OPEN)) {
                 $i = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_ARRAY_SQUARE_BRACE, $i);
             }
@@ -177,11 +150,10 @@ final class SplitLongCallsFixer extends AbstractFixer implements WhitespacesAwar
                     $tokens[$i + 1] = new Token([T_WHITESPACE, $newLine]);
                 } else {
                     $tokens->insertAt($i + 1, new Token([T_WHITESPACE, $newLine]));
-                    ++$beforeEndIndex;
+                    ++$endIndex;
                 }
             }
         }
-
     }
 }
 
