@@ -34,6 +34,7 @@ final class LongLinesFixerTest extends AbstractFixerTestCase
      * @dataProvider provideMethodDefinitionExamplesThatWillNotBeMultilined
      * @dataProvider provideMethodDefinitionExamplesThatNeedToBeMultilined
      * @dataProvider provideMethodDefinitionExamplesThatNeedToBeSingleLined
+     * @dataProvider provideLambdasNotToBeChanged
      */
     public function testFix($expected, $input = null)
     {
@@ -400,4 +401,14 @@ class Something
         ];
     }
 
+
+    public function provideLambdasNotToBeChanged(){
+        yield [
+'<?php
+        $question->setValidator(function ($input) {
+            return new ContextName((string) $input);
+        });
+'
+        ];
+    }
 }
