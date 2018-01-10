@@ -332,11 +332,18 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
         $initialLength = 0;
 
         for ($i = $startIndex; $i <= $endIndex; ++$i) {
-            $initialLength += strlen($tokens[$i]->getContent());
+            if ($tokens[$i]->isWhitespace()) {
+                $initialLength += 1;
+            } else {
+                $initialLength += strlen($tokens[$i]->getContent());
+            }
         }
+        $subLineIndentation = $this->indent.$baseIndentation ;
 
         if ($lineLengthBefore + $initialLength < self::LIMIT) {
             $this->compressCall($tokens, $startIndex, $endIndex);
+        } elseif (strlen($subLineIndentation) + $initialLength < self::LIMIT) {
+            $this->sublineDecompressCall($tokens, $startIndex, $endIndex, $baseIndentation);
         } else {
             $this->decompressCall($tokens, $startIndex, $endIndex);
         }
@@ -427,6 +434,44 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
                 }
             }
         }
+    }
+
+
+    private function sublineDecompressCall($tokens, $startIndex, $endIndex,string $baseIndentation)
+    {
+        if (false === $this->isEnabled('decompress_multiline_call')) {
+            return;
+        }
+
+        $newLine = PHP_EOL.$this->indent.$baseIndentation;
+
+        //
+        // Add new line to start of the call
+        //
+        if (true === $tokens[$startIndex + 1]->isWhitespace()) {
+            $tokens[$startIndex + 1] = new Token([T_WHITESPACE, $newLine]);
+        } else {
+            $tokens->insertAt($startIndex + 1, new Token([T_WHITESPACE, $newLine]));
+            ++$endIndex;
+        }
+
+        //
+        // Add new line to end of the call
+        // Indentation should be of same width as it is on the line where call was started.
+        //
+        if (true === $tokens[$endIndex - 1]->isWhitespace()) {
+            $tokens[$endIndex - 1] = new Token([T_WHITESPACE, PHP_EOL.$this->indent]);
+        } else {
+            $tokens->insertAt($endIndex, new Token([T_WHITESPACE, PHP_EOL.$this->indent]));
+            ++$endIndex;
+        }
+        for ($i = $startIndex + 2; $i < $endIndex - 1; ++$i) {
+
+            if ($tokens[$i]->isWhitespace()) {
+                $tokens[$i] = new Token([T_WHITESPACE, ' ']);
+            }
+        }
+
     }
 
 }
