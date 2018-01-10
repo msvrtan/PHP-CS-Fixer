@@ -304,6 +304,9 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
      */
     private function fixCall(Tokens $tokens, $index)
     {
+        // By default, base indentation should be equal to default one.
+        $baseIndentation = $this->indent;
+
         $startIndex = $index;
 
         $endIndex = $tokens->findBlockEnd(Tokens::BLOCK_TYPE_PARENTHESIS_BRACE, $startIndex);
@@ -332,6 +335,12 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
         $initialLength = 0;
 
         for ($i = $startIndex; $i <= $endIndex; ++$i) {
+
+            // Exit quickly if there is a function in
+            if( $tokens[$i]->isGivenKind(T_FUNCTION)){
+                return;
+            }
+
             if ($tokens[$i]->isWhitespace()) {
                 $initialLength += 1;
             } else {
