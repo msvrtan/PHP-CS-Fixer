@@ -161,7 +161,12 @@ final class RuleSet implements RuleSetInterface
             'yoda_style' => true,
             'split_long_multiline_array' => false,
             'split_long_call' => false,
-            'long_lines' => true,
+            'long_lines' => [
+                'compress_multiline_array'   => true,
+                'decompress_multiline_array' => true,
+                'compress_multiline_call'    => true,
+                'decompress_multiline_call'  => true,
+            ],
         ],
         '@Symfony:risky' => [
             'dir_constant' => true,
