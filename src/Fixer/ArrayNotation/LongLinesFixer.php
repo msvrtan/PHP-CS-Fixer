@@ -3,7 +3,10 @@
 namespace PhpCsFixer\Fixer\ArrayNotation;
 
 use PhpCsFixer\AbstractFixer;
+use PhpCsFixer\Fixer\ConfigurationDefinitionFixerInterface;
 use PhpCsFixer\Fixer\WhitespacesAwareFixerInterface;
+use PhpCsFixer\FixerConfiguration\FixerConfigurationResolver;
+use PhpCsFixer\FixerConfiguration\FixerOptionBuilder;
 use PhpCsFixer\FixerDefinition\CodeSample;
 use PhpCsFixer\FixerDefinition\FixerDefinition;
 use PhpCsFixer\Tokenizer\CT;
@@ -11,7 +14,7 @@ use PhpCsFixer\Tokenizer\Token;
 use PhpCsFixer\Tokenizer\Tokens;
 use PhpCsFixer\Tokenizer\TokensAnalyzer;
 
-final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixerInterface
+final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixerInterface,ConfigurationDefinitionFixerInterface
 {
     /**
      * @TODO:
@@ -43,8 +46,38 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
     public function isCandidate(Tokens $tokens)
     {
         return true;
+    }
 
-        return $tokens->isAnyTokenKindsFound([T_ARRAY, CT::T_ARRAY_SQUARE_BRACE_OPEN]);
+    private function isEnabled($key)
+    {
+        return $this->configuration[$key];
+    }
+
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function createConfigurationDefinition()
+    {
+
+        return new FixerConfigurationResolver([
+            (new FixerOptionBuilder('compress_multiline_array', 'xxx'))
+                ->setAllowedTypes(['bool'])
+                ->setDefault(true)
+                ->getOption(),
+            (new FixerOptionBuilder('decompress_multiline_array', 'xxx'))
+                ->setAllowedTypes(['bool'])
+                ->setDefault(true)
+                ->getOption(),
+            (new FixerOptionBuilder('compress_multiline_call', 'xxx'))
+                ->setAllowedTypes(['bool'])
+                ->setDefault(true)
+                ->getOption(),
+            (new FixerOptionBuilder('decompress_multiline_call', 'xxx'))
+                ->setAllowedTypes(['bool'])
+                ->setDefault(true)
+                ->getOption(),
+        ]);
     }
 
     /**
@@ -75,6 +108,9 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
      */
     private function compressMultilineArray(Tokens $tokens, $index)
     {
+        if (false === $this->isEnabled('compress_multiline_array')) {
+            return;
+        }
         $baseIndentation = $this->indent;
 
         // Calculate array length
@@ -139,6 +175,9 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
      */
     private function decompressArray(Tokens $tokens, $index)
     {
+        if (false === $this->isEnabled('decompress_multiline_array')) {
+            return;
+        }
 
         $startIndex = $index;
 
@@ -306,6 +345,9 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
 
     private function compressCall($tokens, $startIndex, $endIndex)
     {
+        if (false === $this->isEnabled('compress_multiline_call')) {
+            return;
+        }
 
         for ($i = $startIndex + 1; $i <= $endIndex; ++$i) {
 
@@ -318,6 +360,9 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
 
     private function decompressCall($tokens, $startIndex, $endIndex)
     {
+        if (false === $this->isEnabled('decompress_multiline_call')) {
+            return;
+        }
 
         // By default, base indentation should be equal to default one.
         $baseIndentation = $this->indent;
