@@ -460,9 +460,9 @@ final class LongLinesFixer extends AbstractFixer implements WhitespacesAwareFixe
         // Indentation should be of same width as it is on the line where call was started.
         //
         if (true === $tokens[$endIndex - 1]->isWhitespace()) {
-            $tokens[$endIndex - 1] = new Token([T_WHITESPACE, PHP_EOL.$this->indent]);
+            $tokens[$endIndex - 1] = new Token([T_WHITESPACE, PHP_EOL.$baseIndentation]);
         } else {
-            $tokens->insertAt($endIndex, new Token([T_WHITESPACE, PHP_EOL.$this->indent]));
+            $tokens->insertAt($endIndex, new Token([T_WHITESPACE, PHP_EOL.$baseIndentation]));
             ++$endIndex;
         }
         for ($i = $startIndex + 2; $i < $endIndex - 1; ++$i) {
