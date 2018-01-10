@@ -295,9 +295,10 @@ class Something
 class Something
 {
     public function getSomeReallyRandomData(
+        string $longVariableName,
         string $someVeryLongVariableName,
-        $anotherVeryLongVariableName,
-        $evenLongerVariableNameToLookAt
+        string $anotherVeryLongVariableName,
+        string $evenLongerVariableNameToLookAt
     )
     {
         return "1";
@@ -307,13 +308,69 @@ class Something
             '<?php 
 class Something
 {
-    public function getSomeReallyRandomData(string $someVeryLongVariableName, $anotherVeryLongVariableName, $evenLongerVariableNameToLookAt)
+    public function getSomeReallyRandomData(string $longVariableName, string $someVeryLongVariableName, string $anotherVeryLongVariableName, string $evenLongerVariableNameToLookAt)
     {
         return "1";
     }
 }
 ',
         ];
+
+        // Move long single line call parameters to subline
+        yield [
+            '<?php 
+class Something
+{
+    public function getSomeReallyRandomData(
+        $someVeryLongVariableName, $anotherVeryLongVariableName, $evenLongerVariableNameToLookAt
+    )
+    {
+        return "1";
+    }
+}
+',
+            '<?php 
+class Something
+{
+    public function getSomeReallyRandomData($someVeryLongVariableName, $anotherVeryLongVariableName, $evenLongerVariableNameToLookAt)
+    {
+        return "1";
+    }
+}
+',
+        ];
+
+        // Move multiline call parameters to subline
+        yield [
+            '<?php 
+class Something
+{
+    public function getSomeReallyRandomData(
+        $someVeryLongVariableName, $anotherVeryLongVariableName, $evenLongerVariableNameToLookAt
+    ){
+        return "1";
+    }
+}
+',
+            '<?php 
+class Something
+{
+    public function getSomeReallyRandomData(
+        $someVeryLongVariableName, 
+        $anotherVeryLongVariableName, 
+        $evenLongerVariableNameToLookAt
+    ){
+        return "1";
+    }
+}
+',
+        ];
+
+
+
+
+
+
     }
 
     public function provideMethodDefinitionExamplesThatNeedToBeSingleLined()
